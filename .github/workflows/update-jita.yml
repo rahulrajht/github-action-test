@@ -52,7 +52,7 @@ jobs:
             PR_FIELD="customfield_10039"    # Replace with actual SIT PR field ID
             ;;
           uat-*)
-            DATE_FIELD="customfield_1038"  # Replace with actual UAT Entry Date field ID
+            DATE_FIELD="customfield_10038"  # Replace with actual UAT Entry Date field ID
             PR_FIELD="customfield_10040"    # Replace with actual UAT PR field ID
             ;;
           master)
