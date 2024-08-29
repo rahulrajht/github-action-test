@@ -1,0 +1,91 @@
+name: Update Jira on Pull Request Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  update-jira:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Get pull request details
+      id: pr_details
+      run: |
+        BRANCH_NAME=${{ github.event.pull_request.head.ref }}
+        PR_LINK=${{ github.event.pull_request.html_url }}
+        MERGE_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+        # Print debug information
+        echo "Branch Name: $BRANCH_NAME"
+        echo "Pull Request Link: $PR_LINK"
+        echo "Merge Date: $MERGE_DATE"
+
+        # Extract the Jira ticket ID from the branch name
+        if [[ $BRANCH_NAME =~ ([a-zA-Z]+-[0-9]+) ]]; then
+          echo "Extracted Ticket ID: ${BASH_REMATCH[1]}"
+          echo "ticket_id=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+        else
+          echo "No Jira ticket found in the branch name."
+          exit 1
+        fi
+        
+        # Set the environment variables for the PR link and merge date
+        echo "PR_LINK=${PR_LINK}" >> $GITHUB_ENV
+        echo "MERGE_DATE=${MERGE_DATE}" >> $GITHUB_ENV
+        
+        # Determine the target branch
+        TARGET_BRANCH=${{ github.event.pull_request.base.ref }}
+        echo "TARGET_BRANCH=${TARGET_BRANCH}" >> $GITHUB_ENV
+
+    - name: Update Jira ticket
+      if: success()
+      run: |
+        TICKET_ID=${{ env.ticket_id }}
+        PR_LINK=${{ env.PR_LINK }}
+        MERGE_DATE=${{ env.MERGE_DATE }}
+        TARGET_BRANCH=${{ env.TARGET_BRANCH }}
+
+        # Determine the Jira fields based on the target branch
+        case $TARGET_BRANCH in
+          sit-*)
+            DATE_FIELD="customfield_10037"   # Replace with your custom field ID for SIT Entry Date
+            PR_FIELD="customfield_10039"     # Replace with your custom field ID for PR Link
+            ;;
+          uat-*)
+            DATE_FIELD="customfield_10038"   # Replace with your custom field ID for UAT Entry Date
+            PR_FIELD="customfield_10040"     # Replace with your custom field ID for PR Link
+            ;;
+          master)
+            DATE_FIELD="customfield_10037"   # Replace with your custom field ID for Master Entry Date
+            PR_FIELD="customfield_10039"     # Replace with your custom field ID for PR Link
+            ;;
+          *)
+            echo "Target branch does not match SIT, UAT, or Master."
+            exit 1
+            ;;
+        esac
+
+        # Make the API call to Jira to update the fields
+        response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Basic ${{ secrets.JIRA_API }}" \
+          --data "{
+            \"fields\": {
+              \"$DATE_FIELD\": \"$MERGE_DATE\",
+              \"$PR_FIELD\": \"$PR_LINK\"
+            }
+          }" \
+          "https://rahulrajnkeht.atlassian.net/rest/api/2/issue/$TICKET_ID")
+
+        if [[ $response -ne 204 ]]; then
+          echo "Failed to update Jira ticket. Response code: $response"
+          exit 1
+        fi
+
+    env:
+      JIRA_API: ${{ secrets.JIRA_API }}
