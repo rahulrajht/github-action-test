@@ -1,2 +1,2 @@
 const str = "testing 2";
-const str2 = "tes 5";
+const str2 = "tes 6";
