@@ -56,7 +56,7 @@ jobs:
             DATE_FIELD="customfield_10037"   # Replace with your custom field ID for SIT Entry Date
             PR_FIELD="customfield_10039"     # Replace with your custom field ID for PR Link
             ;;
-          uat-*)
+          uat)
             DATE_FIELD="customfield_10038"   # Replace with your custom field ID for UAT Entry Date
             PR_FIELD="customfield_10040"     # Replace with your custom field ID for PR Link
             ;;
