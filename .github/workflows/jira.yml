@@ -75,7 +75,7 @@ jobs:
               \"$PR_FIELD\": \"$PR_LINK\"
             }
           }" \
-          "https://your-domain.atlassian.net/rest/api/3/issue/$TICKET_ID")
+          "https://rahulrajnkeht.net/rest/api/3/issue/$TICKET_ID")
 
         echo "Response Code: $response"
         cat response.txt
